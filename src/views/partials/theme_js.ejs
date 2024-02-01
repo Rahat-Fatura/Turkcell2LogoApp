@@ -1,0 +1,42 @@
+<!-- Core JS -->
+<!-- build:js assets/vendor/js/core.js -->
+<script src="/vendor/libs/jquery/jquery.js"></script>
+<script src="/vendor/libs/popper/popper.js"></script>
+<script src="/vendor/js/bootstrap.js"></script>
+<script src="/vendor/libs/node-waves/node-waves.js"></script>
+<script src="/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
+<script src="/vendor/libs/hammer/hammer.js"></script>
+<script src="/vendor/js/menu.js"></script>
+<!-- endbuild -->
+
+<script>
+    $(window).on("load", function() {
+        $(".loader-wrapper").fadeOut("slow");
+        $('#<%= page.menu %>-nav').addClass('active');
+        $('#<%= page.uppermenu %>-upnav').addClass('active open');
+    });
+</script>
+
+<!-- Vendors JS -->
+<%- include('./js/vendor') %>
+
+<!-- Main JS -->
+<script src="/js/pages/main.js"></script>
+
+<!-- Page JS -->
+<%- include('./js/page') %>
+<%- include('./js/custom') %>
+
+<script>
+    window.route = function(href) {
+        document.querySelector('body').style.opacity = 0
+        setTimeout(function() {
+            window.location.href = href
+        }, 500)
+    }
+
+    document.addEventListener('DOMContentLoaded', function(event) {
+        document.querySelector('body').style.opacity = 1
+    })
+    $("span[onclick*=route]").css("cursor", "pointer")
+</script>

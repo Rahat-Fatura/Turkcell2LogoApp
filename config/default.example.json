@@ -1,0 +1,38 @@
+{
+  "port": 46512,
+  "mssql": {
+    "url": ""
+  },
+  "turkcell": {
+    "url": "https://api.example.com",
+    "key": ""
+  },
+  "logo": {
+    "credentials": {
+      "url": "",
+      "username": "",
+      "password": "",
+      "firmno": "",
+      "basic_username": "",
+      "basic_password": ""
+    },
+    "firma": "",
+    "donem": "",
+    "params": {
+      "cari_muhasebe_kodu": "",
+      "muhasebe_kodu": "",
+      "gl_code_1": "",
+      "gl_code_2": "",
+      "units": {
+        "T0": "",
+        "C62": "ADET",
+        "EA": "ÇİFT"
+      },
+      "currency": {
+        "TRY": "TL",
+        "USD": "USD",
+        "EUR": "EUR"
+      }
+    }
+  }
+}

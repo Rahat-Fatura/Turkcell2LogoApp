@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./t2l.db"
+}
+
+model Invoices {
+  id                    Int            @id @default(autoincrement())
+  cretedAt              DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  status                Int            @default(100)
+  uuid                  String
+  direction             Int
+  profile               String
+  type                  String
+  invoiceDate           DateTime
+  currentName           String
+  currentTax            String
+  logoCurrentId         Int?
+  logoCurrentName       String?
+  logoInvoiceId         Int?
+  logoInvoiceSendStatus Int?
+  logoInvoiceSendDetail String?
+  logoSendedBody        String?
+  data                  String
+  InvoiceLines          InvoiceLines[]
+
+  @@unique([uuid, direction, profile, type, currentTax])
+}
+
+model InvoiceLines {
+  id           Int      @id @default(autoincrement())
+  cretedAt     DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  invoiceId    Int
+  invoice      Invoices @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  name         String
+  price        Float
+  quantity     Float
+  unit_code    String
+  amount       Float
+  data         String
+  logoItemId   Int?
+  logoItemName String?
+}
+
+model Service {
+  id        Int      @id @default(autoincrement())
+  cretedAt  DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  token     String
+  expires   DateTime
+}

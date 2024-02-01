@@ -1,0 +1,75 @@
+<%- include('../../partials/doctype.ejs') %>
+
+<head>
+    <%- include('../../partials/header') %>
+    <title><%= page.display %> - <%= app.name %></title>
+    <%- include('../../partials/theme_css') %>
+</head>
+
+<body>
+    <div class="layout-wrapper layout-navbar-full layout-horizontal layout-without-menu">
+        <div class="layout-container">
+            <div class="layout-page">
+                <div class="content-wrapper">
+                    <div class="container-fluid flex-grow-1 container-p-y" style="padding-right: 5rem; padding-left: 5rem;">
+                        <div class="card">
+                            <div class="card-header header-elements">
+                                <h5 class="m-0 me-2">Faturalar</h5>
+                                <div class="card-header-elements ms-auto">
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="col-12">
+                                    <div class="row justify-content-end">
+                                        <div class="col-md-3 col-12 mb-2 d-grid">
+                                            <button id="sync-invoices" type="button" class="btn btn-label-twitter waves-effect">
+                                                <i class="tf-icons ti ti-refresh ti-xs me-1"></i> Faturaları Senkronize Et
+                                            </button>
+                                        </div>
+                                        <div class="col-md-3 col-12 mb-2 d-grid">
+                                            <button id="send-selected-invoices" type="button" class="btn btn-label-pinterest waves-effect">
+                                                <i class="fa-regular fa-file-lines me-1"></i> Aktar
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-5 col-6 mb-md-4 mb-1">
+                                            <label for="start-date" class="form-label">Başlangıç Tarihi</label>
+                                            <div class="input-group">
+                                                <button class="btn btn-icon btn-label-linkedin waves-effect" type="button" id="previous-month">
+                                                    <i class="fa-solid fa-angles-left"></i>
+                                                </button>
+                                                <input type="text" class="form-control flatpickr-input" id="start-date">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-5 col-6 mb-md-4 mb-1">
+                                            <label for="end-date" class="form-label">Bitiş Tarihi</label>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control flatpickr-input" id="end-date">
+                                                <button class="btn btn-icon btn-label-linkedin waves-effect" type="button" id="next-month">
+                                                    <i class="fa-solid fa-angles-right"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2 col-12 mb-md-4 mb-3 mx-auto d-grid">
+                                            <button id="search-button" type="button" class="btn btn-primary waves-effect mt-md-4 mt-3">
+                                                <i class="tf-icons ti ti-search"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="invoices-grid" style="width: 100%; height: 600px;" class="ag-theme-quartz"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="content-backdrop fade"></div>
+                </div>
+            </div>
+        </div>
+        <div class="layout-overlay layout-menu-toggle"></div>
+        <div class="drag-target"></div>
+    </div>
+    <%- include('../../partials/theme_js') %>
+</body>
+
+</html>
