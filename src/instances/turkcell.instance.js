@@ -1,10 +1,15 @@
 const axios = require('axios');
+const crypto = require('crypto');
+const https = require('https');
 const config = require('../config/config');
 
 const { url, key } = config.turkcell;
 
 const turkcell = axios.create({
   baseURL: url,
+  httpsAgent: new https.Agent({
+    secureOptions: crypto.constants.SSL_OP_LEGACY_SERVER_CONNECT,
+  }),
 });
 
 turkcell.interceptors.request.use((request) => {
