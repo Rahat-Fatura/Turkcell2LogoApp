@@ -1,6 +1,6 @@
 {
   "name": "rs-turkcell-to-logo",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "An app for turkcell invoices to logo invoices",
   "scripts": {
     "start": "pm2 start ecosystem.config.json --no-daemon",
