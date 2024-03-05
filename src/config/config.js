@@ -45,6 +45,7 @@ const configVarsSchema = Joi.object().keys({
         gl_code_2: Joi.string().required().description('GL Code 2'),
         units: Joi.object().unknown().required().description('Birimler'),
         currency: Joi.object().unknown().required().description('Para birimleri'),
+        sourceWh: Joi.array().items(Joi.object().unknown()).required().description('Kaynak depolar'),
       }),
     })
     .required(),
@@ -84,6 +85,7 @@ module.exports = {
       gl_code_2: configVars.logo.params.gl_code_2,
       units: configVars.logo.params.units,
       currency: configVars.logo.params.currency,
+      sourceWh: configVars.logo.params.sourceWh,
     },
   },
 };

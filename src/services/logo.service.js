@@ -97,16 +97,17 @@ const findSerieLotDetail = async (serieLotCode) => {
     if (fromSerieLotId.recordset.length !== 0) {
       const serieLot = fromSerieLotId.recordset[0];
       return {
+        SOURCE_MT_REFERENCE: serieLot.STTRANSREF,
         SOURCE_SLT_REFERENCE: serieLot.LOGICALREF,
-        SLTYPE: serieLot.REMAMOUNT,
+        SOURCE_QUANTITY: 1,
+        IOCODE: 4,
+        SL_TYPE: 2,
+        SL_CODE: serieLotCode,
         MU_QUANTITY: 1,
-        REMLNUNITAMNT: serieLot.REMLNUNITAMNT,
-        REMAMOUNT: serieLot.REMAMOUNT,
-        AMOUNT: serieLot.AMOUNT,
-        MAINAMOUNT: serieLot.MAINAMOUNT,
-        UINFO1: 1,
-        UINFO2: 1,
-        SL_CODE: serieLot.CODE,
+        QUANTITY: 1,
+        UNIT_CODE: 'ADET',
+        UNIT_CONV1: 1,
+        UNIT_CONV2: 1,
         DATE_EXPIRED: serieLot.EXPDATE,
         SLREF: serieLot.SLREF,
       };
@@ -143,6 +144,14 @@ const getToken = async () => {
   return token.token;
 };
 
+const createNewCodeForCurrent = async (serie) => {
+  const sql = await connect();
+  const lastCode = await sql.query(queries.current.getLastCodeBySerie(serie));
+  if (lastCode.recordset[0].code === null) return `${serie}00000000001`;
+  const lastCodeNumber = parseInt(lastCode.recordset[0].code.substring(3), 10);
+  return `${serie}${_.padStart((lastCodeNumber + 1).toString(), lastCode.recordset[0].code.substring(3).length, '0')}`;
+};
+
 const normalizeCurrentForLogo = async (invNo, currentObject) => {
   let taxno;
   let tckno;
@@ -154,7 +163,7 @@ const normalizeCurrentForLogo = async (invNo, currentObject) => {
     tckno = currentObject.vkn_tckn;
   }
   return {
-    CODE: invNo,
+    CODE: await createNewCodeForCurrent(invNo.substring(0, 3)),
     TITLE: currentObject.name,
     ACCOUNT_TYPE: 3,
     ADDRESS1: currentObject.address,
@@ -176,24 +185,57 @@ const normalizeCurrentForLogo = async (invNo, currentObject) => {
     EXPBRWS: 1,
     FINBRWS: 1,
     AUXIL_CODE: '',
-    GL_CODE: config.logo.params.cari_muhasebe_kodu,
   };
 };
 
-const createCurrent = async (currentObject) => {
-  const currentJsonForLogo = await normalizeCurrentForLogo(currentObject);
+const createCurrent = async (invNo, currentObject) => {
+  const currentJsonForLogo = await normalizeCurrentForLogo(invNo, currentObject);
   const createdCurrent = await logo.post('/arps', currentJsonForLogo, {
     headers: {
       Authorization: `Bearer ${await getToken()}`,
     },
   });
-  return createdCurrent;
+  return createdCurrent.data;
+};
+
+const getSourceWh = (invoiceNumber) => {
+  const serie = invoiceNumber.substring(0, 3);
+  const sources = config.logo.params.sourceWh;
+  const source = _.find(sources, (s) => s.serie === serie);
+  return source.value;
+};
+
+const getSourceCode = (invoiceNumber) => {
+  const serie = invoiceNumber.substring(0, 3);
+  const sources = config.logo.params.sourceWh;
+  const source = _.find(sources, (s) => s.serie === serie);
+  return source.code;
+};
+
+const getSourceRef = (invoiceNumber) => {
+  const serie = invoiceNumber.substring(0, 3);
+  const sources = config.logo.params.sourceWh;
+  const source = _.find(sources, (s) => s.serie === serie);
+  return source.accref;
 };
 
 const normalizeInvoiceForLogo = async (invoiceId) => {
   const invoice = await invoicesModel.getInvoiceById(invoiceId);
-  const logoCurrent = await getCurrentFromId(invoice.logoCurrentId);
   const json = JSON.parse(invoice.data);
+  const currentObject = invoice.direction === 1 ? json.receiver_object : json.sender_object;
+  let logoCurrent;
+  if (invoice.logoCurrentId === null) {
+    const findedCurrent = await findCurrentFromInvoice(currentObject);
+    if (findedCurrent) {
+      invoice.logoCurrentId = findedCurrent.id;
+    }
+  }
+  if (invoice.logoCurrentId === null) {
+    const current = await createCurrent(json.number, invoice.direction === 1 ? json.receiver_object : json.sender_object);
+    logoCurrent = await getCurrentFromId(current.INTERNAL_REFERENCE);
+  } else {
+    logoCurrent = await getCurrentFromId(invoice.logoCurrentId);
+  }
   const logoLines = [];
   for await (const line of invoice.InvoiceLines) {
     line.data = JSON.parse(line.data);
@@ -209,8 +251,11 @@ const normalizeInvoiceForLogo = async (invoiceId) => {
     }
     if (_.filter(slDetail, (detail) => detail !== null).length > 0) {
       slDetails = {
-        items: {
-          SL_DETAILS: _.filter(slDetail, (detail) => detail !== null),
+        SL_DETAILS: {
+          items: _.filter(slDetail, (detail) => detail !== null).map((detail) => ({
+            SOURCE_WH: getSourceWh(json.number),
+            ...detail,
+          })),
         },
       };
     }
@@ -218,46 +263,59 @@ const normalizeInvoiceForLogo = async (invoiceId) => {
       TYPE: 0,
       MASTER_CODE: logoObject.CODE,
       QUANTITY: line.quantity,
-      PRICE: line.price,
+      PRICE: line.price * (1 + _.find(json.tax_subtotals, (tax) => tax.code === '0015').percent / 100),
       VAT_RATE: _.find(json.tax_subtotals, (tax) => tax.code === '0015').percent,
       UNIT_CODE: config.logo.params.units[line.data.quantity_unit],
       UNIT_CONV1: 1,
       UNIT_CONV2: 1,
-      EDTCURR_GLOBAL_CODE: config.logo.params.currency[json.currency_code],
+      SOURCEINDEX: getSourceWh(json.number),
+      SOURCECOSTGRP: getSourceWh(json.number),
+      EDTCURR_GLOBAL_CODE: 'USD',
+      VAT_INCLUDED: 1,
       DISPATCH_NUMBER: json.number,
-      GL_CODE1: config.logo.params.gl_code_1,
-      GL_CODE2: config.logo.params.gl_code_2,
+      // GL_CODE1: getSourceCode(json.number),
+      // GL_CODE2: getSourceCode(json.number),
+      // GL_CODE3: getSourceCode(json.number),
       ...slDetails,
     });
   }
   const logoJson = {
     INTERNAL_REFERENCE: 1,
-    TYPE: 8,
+    TYPE: 7,
     NUMBER: json.number,
     FICHENO: json.number,
-    GL_CODE: config.logo.params.gl_code_1,
+    // GL_CODE: config.logo.params.gl_code_1,
     DOC_NUMBER: json.number,
     DATE: moment(json.issue_datetime).format('YYYY-MM-DD HH:mm:ss'),
     DOC_DATE: moment(json.issue_datetime).format('YYYY-MM-DD HH:mm:ss'),
     // TIME: moment(json.issue_datetime).format('HH:mm:ss'),
+    ACCOUNTREF: getSourceRef(json.number),
+    GL_CODE: getSourceCode(json.number),
+    SOURCE_WH: getSourceWh(json.number),
+    SOURCE_COST_GRP: getSourceWh(json.number),
     ARP_CODE: logoCurrent.CODE,
-    EDTCURR_GLOBAL_CODE: config.logo.params.currency[json.currency_code],
-    CURRSEL_TOTALS: 2,
-    AMOUNT: 1,
-    REMLNUNITAMNT: 1,
-    CURRSEL_DETAILS: 2,
+    NOTES1: invoice.currentName.substring(0, 60),
+    EDTCURR_GLOBAL_CODE: 'USD',
+    CURR_INVOICE: 0,
+    PAYDEFREF: 1,
+    VAT_INCLUDED_GRS: 1,
+    CURRSEL_TOTALS: 1,
+    CURRSEL_DETAILS: 0,
     VAT_RATE: _.find(json.tax_subtotals, (tax) => tax.code === '0015').percent,
     DISPATCHES: {
       items: [
         {
           INTERNAL_REFERENCE: 0,
-          TYPE: 8,
+          TYPE: 7,
           GRPCODE: 2,
           IOCODE: 3,
           NUMBER: json.number,
           DATE: moment(json.issue_datetime).format('YYYY-MM-DD HH:mm:ss'),
+          SOURCE_WH: getSourceWh(json.number),
+          SOURCE_COST_GRP: getSourceWh(json.number),
           // TIME: moment(json.issue_datetime).format('HH:mm:ss'),
           INVOICE_NUMBER: json.number,
+          TOTAL_NET: json.payable_amount,
         },
       ],
     },

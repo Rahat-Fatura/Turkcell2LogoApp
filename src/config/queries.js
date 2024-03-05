@@ -11,13 +11,16 @@ module.exports = {
     searchByCodeAndName: (text) => {
       return `SELECT LOGICALREF AS id, DEFINITION_ AS name, CODE AS code FROM LG_${config.logo.firma}_CLCARD WHERE CODE LIKE '%${text}%' OR DEFINITION_ LIKE '%${text}%'`;
     },
+    getLastCodeBySerie: (serie) => {
+      return `SELECT MAX(CODE) AS code FROM LG_${config.logo.firma}_CLCARD WHERE CODE LIKE '${serie}0%'`;
+    },
   },
   serieLots: {
     findByCode: (seriLotCode) => {
       return `SELECT LOGICALREF AS id FROM LG_${config.logo.firma}_${config.logo.donem}_SERILOTN WHERE CODE = '${seriLotCode}'`;
     },
     findTransById: (seriLotId) => {
-      return `SELECT * FROM LG_${config.logo.firma}_${config.logo.donem}_SLTRANS WHERE SLREF = '${seriLotId}'`;
+      return `SELECT * FROM LG_${config.logo.firma}_${config.logo.donem}_SLTRANS WHERE SLREF = '${seriLotId}' order by LOGICALREF DESC`;
     },
   },
   items: {
