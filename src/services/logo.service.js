@@ -205,19 +205,19 @@ const getSourceWh = (invoiceNumber) => {
   return source.value;
 };
 
-const getSourceCode = (invoiceNumber) => {
-  const serie = invoiceNumber.substring(0, 3);
-  const sources = config.logo.params.sourceWh;
-  const source = _.find(sources, (s) => s.serie === serie);
-  return source.code;
-};
+// const getSourceCode = (invoiceNumber) => {
+//   const serie = invoiceNumber.substring(0, 3);
+//   const sources = config.logo.params.sourceWh;
+//   const source = _.find(sources, (s) => s.serie === serie);
+//   return source.code;
+// };
 
-const getSourceRef = (invoiceNumber) => {
-  const serie = invoiceNumber.substring(0, 3);
-  const sources = config.logo.params.sourceWh;
-  const source = _.find(sources, (s) => s.serie === serie);
-  return source.accref;
-};
+// const getSourceRef = (invoiceNumber) => {
+//   const serie = invoiceNumber.substring(0, 3);
+//   const sources = config.logo.params.sourceWh;
+//   const source = _.find(sources, (s) => s.serie === serie);
+//   return source.accref;
+// };
 
 const normalizeInvoiceForLogo = async (invoiceId) => {
   const invoice = await invoicesModel.getInvoiceById(invoiceId);
@@ -289,8 +289,9 @@ const normalizeInvoiceForLogo = async (invoiceId) => {
     DATE: moment(json.issue_datetime).format('YYYY-MM-DD HH:mm:ss'),
     DOC_DATE: moment(json.issue_datetime).format('YYYY-MM-DD HH:mm:ss'),
     // TIME: moment(json.issue_datetime).format('HH:mm:ss'),
-    ACCOUNTREF: getSourceRef(json.number),
-    GL_CODE: getSourceCode(json.number),
+    AUXIL_CODE: json.number.substring(0, 3),
+    // ACCOUNTREF: getSourceRef(json.number),
+    // GL_CODE: getSourceCode(json.number),
     SOURCE_WH: getSourceWh(json.number),
     SOURCE_COST_GRP: getSourceWh(json.number),
     ARP_CODE: logoCurrent.CODE,
