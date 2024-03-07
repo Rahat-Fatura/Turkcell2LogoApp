@@ -162,8 +162,8 @@ const syncInvoicesToDatabase = async (
 };
 
 const listInvoices = async (startDate, endDate) => {
-  const sDate = moment(startDate).utc(true).toDate();
-  const eDate = moment(endDate).utc(true).toDate();
+  const sDate = moment(startDate).startOf('day').toDate();
+  const eDate = moment(endDate).endOf('day').toDate();
   let invoices = await invoicesModel.listInvoices(sDate, eDate);
   invoices = _.map(invoices, (invoice) => {
     return normalizeInvoiceListForUI(invoice);

@@ -10,7 +10,7 @@ $(document).ready(function () {
     },
   });
   let today = new Date();
-  let fdate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 14);
+  let fdate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 2);
   start_date = $('#start-date').flatpickr({
     locale: 'tr',
     defaultDate: fdate,
