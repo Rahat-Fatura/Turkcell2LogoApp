@@ -45,5 +45,11 @@ module.exports = {
     searchByCodeAndName: (text) => {
       return `SELECT LOGICALREF AS id,  NAME AS name, CODE AS code FROM LG_${config.logo.firma}_ITEMS WHERE CODE LIKE '%${text}%' OR NAME LIKE '%${text}%'`;
     },
+    getItemSourceIndex: (seriLotId) => {
+      return `SELECT TOP 1 SOURCEINDEX FROM LG_${config.logo.firma}_${config.logo.donem}_STLINE WHERE
+      STFICHEREF = (SELECT TOP 1 STFICHEREF FROM LG_${config.logo.firma}_${config.logo.donem}_SLTRANS WHERE SLREF = '${seriLotId}' AND FICHETYPE IN (14,25) ORDER BY LOGICALREF DESC)
+      AND STOCKREF = (SELECT TOP 1 ITEMREF FROM LG_${config.logo.firma}_${config.logo.donem}_SLTRANS WHERE SLREF = '${seriLotId}' AND FICHETYPE IN (14,25) ORDER BY LOGICALREF DESC)
+      AND SOURCEINDEX <> 0`;
+    },
   },
 };

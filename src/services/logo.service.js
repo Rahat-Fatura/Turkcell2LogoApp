@@ -202,7 +202,19 @@ const getSourceWh = (invoiceNumber) => {
   const serie = invoiceNumber.substring(0, 3);
   const sources = config.logo.params.sourceWh;
   const source = _.find(sources, (s) => s.serie === serie);
+  if (!source) {
+    return 0;
+  }
   return source.value;
+};
+
+const getItemSourceWh = async (slRef, invoiceNumber) => {
+  const sql = await connect();
+  const destIndex = await sql.query(queries.items.getItemSourceIndex(slRef));
+  if (destIndex.recordset.length === 0) {
+    return getSourceWh(invoiceNumber);
+  }
+  return destIndex.recordset[0].SOURCEINDEX;
 };
 
 // const getSourceCode = (invoiceNumber) => {
@@ -250,10 +262,11 @@ const normalizeInvoiceForLogo = async (invoiceId) => {
       }
     }
     if (_.filter(slDetail, (detail) => detail !== null).length > 0) {
+      const wh = await getItemSourceWh(_.filter(slDetail, (detail) => detail !== null)[0].SLREF, json.number);
       slDetails = {
         SL_DETAILS: {
           items: _.filter(slDetail, (detail) => detail !== null).map((detail) => ({
-            SOURCE_WH: getSourceWh(json.number),
+            SOURCE_WH: wh,
             ...detail,
           })),
         },
@@ -263,13 +276,13 @@ const normalizeInvoiceForLogo = async (invoiceId) => {
       TYPE: 0,
       MASTER_CODE: logoObject.CODE,
       QUANTITY: line.quantity,
-      PRICE: line.price * (1 + _.find(json.tax_subtotals, (tax) => tax.code === '0015').percent / 100),
-      VAT_RATE: _.find(json.tax_subtotals, (tax) => tax.code === '0015').percent,
+      PRICE: line.price * (1 + (_.find(line.data.tax_subtotals, (tax) => tax.code === '0015')?.percent || 0) / 100),
+      VAT_RATE: _.find(line.data.tax_subtotals, (tax) => tax.code === '0015')?.percent || 0,
       UNIT_CODE: config.logo.params.units[line.data.quantity_unit],
       UNIT_CONV1: 1,
       UNIT_CONV2: 1,
-      SOURCEINDEX: getSourceWh(json.number),
-      SOURCECOSTGRP: getSourceWh(json.number),
+      SOURCEINDEX: slDetails.SL_DETAILS ? slDetails.SL_DETAILS.items[0].SOURCE_WH : getSourceWh(json.number),
+      SOURCECOSTGRP: slDetails.SL_DETAILS ? slDetails.SL_DETAILS.items[0].SOURCE_WH : getSourceWh(json.number),
       EDTCURR_GLOBAL_CODE: 'USD',
       VAT_INCLUDED: 1,
       DISPATCH_NUMBER: json.number,
