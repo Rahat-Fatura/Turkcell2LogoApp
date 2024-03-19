@@ -110,8 +110,8 @@ const normalizeInvoiceListForUI = (invoices) => {
 };
 
 const syncInvoicesToDatabase = async (
-  startDate = moment().subtract(7, 'days').format('YYYY-MM-DD HH:mm:ss'),
-  endDate = moment().add(1, 'days').format('YYYY-MM-DD HH:mm:ss'),
+  startDate = moment().utc(false).subtract(7, 'days').format('YYYY-MM-DD HH:mm:ss'),
+  endDate = moment().utc(false).add(1, 'days').format('YYYY-MM-DD HH:mm:ss'),
 ) => {
   const incomingInvoices = await turkcellService.listIncomings(startDate, endDate);
   const outgoingInvoices = await turkcellService.listOutgoings(invoiceListTypes.outgoing, startDate, endDate);
@@ -162,8 +162,8 @@ const syncInvoicesToDatabase = async (
 };
 
 const listInvoices = async (startDate, endDate) => {
-  const sDate = moment(startDate).startOf('day').toDate();
-  const eDate = moment(endDate).endOf('day').toDate();
+  const sDate = moment.utc(startDate).startOf('day').toDate();
+  const eDate = moment.utc(endDate).endOf('day').toDate();
   let invoices = await invoicesModel.listInvoices(sDate, eDate);
   invoices = _.map(invoices, (invoice) => {
     return normalizeInvoiceListForUI(invoice);

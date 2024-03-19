@@ -118,7 +118,7 @@ const findSerieLotDetail = async (serieLotCode) => {
 
 const getToken = async () => {
   const token = await serviceModel.getToken();
-  if (!token || token.expires < moment().utc(true).toDate()) {
+  if (!token || token.expires < moment().utc(false).toDate()) {
     let newToken;
     try {
       newToken = await axios({
@@ -137,7 +137,7 @@ const getToken = async () => {
     }
     await serviceModel.setToken(
       newToken.data.access_token,
-      moment().utc(true).add(newToken.data.expires_in, 'seconds').toDate(),
+      moment().utc(false).add(newToken.data.expires_in, 'seconds').toDate(),
     );
     return newToken.data.access_token;
   }
@@ -299,14 +299,14 @@ const normalizeInvoiceForLogo = async (invoiceId) => {
     FICHENO: json.number,
     // GL_CODE: config.logo.params.gl_code_1,
     DOC_NUMBER: json.number,
-    DATE: moment(json.issue_datetime).format('YYYY-MM-DD HH:mm:ss'),
-    DOC_DATE: moment(json.issue_datetime).format('YYYY-MM-DD HH:mm:ss'),
+    DATE: moment.utc(json.issue_datetime).format('YYYY-MM-DD HH:mm:ss'),
+    DOC_DATE: moment.utc(json.issue_datetime).format('YYYY-MM-DD HH:mm:ss'),
     // TIME: moment(json.issue_datetime).format('HH:mm:ss'),
     AUXIL_CODE: json.number.substring(0, 3),
     // ACCOUNTREF: getSourceRef(json.number),
     // GL_CODE: getSourceCode(json.number),
-    SOURCE_WH: getSourceWh(json.number),
-    SOURCE_COST_GRP: getSourceWh(json.number),
+    SOURCE_WH: logoLines[0].SL_DETAILS ? logoLines[0].SL_DETAILS.items[0].SOURCE_WH : getSourceWh(json.number),
+    SOURCE_COST_GRP: logoLines[0].SL_DETAILS ? logoLines[0].SL_DETAILS.items[0].SOURCE_WH : getSourceWh(json.number),
     ARP_CODE: logoCurrent.CODE,
     NOTES1: invoice.currentName.substring(0, 60),
     EDTCURR_GLOBAL_CODE: 'USD',
@@ -324,9 +324,9 @@ const normalizeInvoiceForLogo = async (invoiceId) => {
           GRPCODE: 2,
           IOCODE: 3,
           NUMBER: json.number,
-          DATE: moment(json.issue_datetime).format('YYYY-MM-DD HH:mm:ss'),
-          SOURCE_WH: getSourceWh(json.number),
-          SOURCE_COST_GRP: getSourceWh(json.number),
+          DATE: moment.utc(json.issue_datetime).format('YYYY-MM-DD HH:mm:ss'),
+          SOURCE_WH: logoLines[0].SL_DETAILS ? logoLines[0].SL_DETAILS.items[0].SOURCE_WH : getSourceWh(json.number),
+          SOURCE_COST_GRP: logoLines[0].SL_DETAILS ? logoLines[0].SL_DETAILS.items[0].SOURCE_WH : getSourceWh(json.number),
           // TIME: moment(json.issue_datetime).format('HH:mm:ss'),
           INVOICE_NUMBER: json.number,
           TOTAL_NET: json.payable_amount,

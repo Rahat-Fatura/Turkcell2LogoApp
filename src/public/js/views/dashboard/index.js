@@ -116,7 +116,7 @@ const columnDefs = [
     headerName: 'Tarih',
     width: 130,
     valueFormatter: function (params) {
-      return moment(params.value).format('DD/MM/YYYY');
+      return moment.utc(params.value).format('DD/MM/YYYY');
     },
   },
   {
@@ -288,7 +288,6 @@ const gridOptions = {
   singleClickEdit: true,
   stopEditingWhenCellsLoseFocus: true,
   masterDetail: true,
-  detailRowAutoHeight: true,
   detailCellRendererParams: {
     detailGridOptions: {
       defaultColDef: {
@@ -325,6 +324,12 @@ const gridOptions = {
       params.successCallback(params.data.lines);
     },
   },
+  getRowHeight: (params) => {
+    const isDetailRow = params.node.detail;
+    if (!isDetailRow) return undefined;
+    const detailPanelHeight = params.data.lines.length * 70;
+    return detailPanelHeight > 500 ? detailPanelHeight : 400;
+  },
 };
 
 $(document).ready(function () {
@@ -345,8 +350,8 @@ $(document).ready(function () {
     gridApi.setFilterModel(filter);
   }, 500);
   const getInvoices = () => {
-    let sd_data = moment(start_date.selectedDates[0]);
-    let ed_data = moment(end_date.selectedDates[0]);
+    let sd_data = moment.utc(start_date.selectedDates[0]);
+    let ed_data = moment.utc(end_date.selectedDates[0]);
     $.ajax({
       url: `/list-invoices`,
       data: {
@@ -374,8 +379,8 @@ $(document).ready(function () {
   });
 
   $('#sync-invoices').on('click', function () {
-    let sd_data = moment(start_date.selectedDates[0]);
-    let ed_data = moment(end_date.selectedDates[0]);
+    let sd_data = moment.utc(start_date.selectedDates[0]);
+    let ed_data = moment.utc(end_date.selectedDates[0]);
     Swal.fire({
       html: `<b>${sd_data.format('DD.MM.YYYY')} - ${ed_data.format(
         'DD.MM.YYYY',
