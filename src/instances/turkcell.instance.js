@@ -15,35 +15,36 @@ const turkcellBase = axios.create({
   }),
 });
 
-const turkcell = rateLimit(turkcellBase, { 
-  maxRequests: 1, 
-  perMilliseconds: 1100 
+const turkcell = rateLimit(turkcellBase, {
+  maxRequests: 1,
+  perMilliseconds: 1100,
 });
 
-axiosRetry(turkcell, {
-  retries: 5,
-  retryDelay: axiosRetry.exponentialDelay,
-  onRetry: (retryCount, error, requestConfig) => {
-    logger.error(
-      `Request failed with ${error.code}. Retry attempt #${retryCount}, method=${requestConfig.method} url=${requestConfig.url}`,
-    );
-  },
-});
+// axiosRetry(turkcell, {
+//   retries: 5,
+//   retryDelay: axiosRetry.exponentialDelay,
+//   onRetry: (retryCount, error, requestConfig) => {
+//     logger.error(
+//       `Request failed with ${error.code}. Retry attempt #${retryCount}, method=${requestConfig.method} url=${requestConfig.url}`,
+//     );
+//   },
+// });
 
 turkcell.interceptors.request.use((request) => {
   request.headers['Content-Type'] = 'application/json';
   request.headers['x-api-key'] = key;
+  console.log(`Turkcell Request: ${request?.url} DATE: ${new Date().toISOString()}`);
   return request;
 });
 
 turkcell.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error(error);
+    console.error('turkcell.interceptors.response error', error);
     if (error.code === 'ECONNREFUSED') {
       throw new Error('Turkcell servisine erişilemiyor.');
     }
-    throw new Error(JSON.stringify(error.response));
+    throw new Error(error.response?.data?.message || 'Turkcell servisi hatası.');
   },
 );
 

@@ -15,9 +15,13 @@ const {
 const logger = require('../config/logger');
 
 const getInvoiceJsonFromUuid = async (id, direction) => {
-  const xml = await turkcellService.exportInvoice(id, direction, exportingInvoiceTypes.xml);
-  const json = await ubl2json.invoice.convertedJson(xml);
-  return json;
+  try {
+    const xml = await turkcellService.exportInvoice(id, direction, exportingInvoiceTypes.xml);
+    const json = await ubl2json.invoice.convertedJson(xml);
+    return json;
+  } catch (error) {
+    console.log("ID'li fatura alınırken hata oluştu:", id, error.message);
+  }
 };
 
 const normalizeInvoice = async (invoice, direction) => {
@@ -111,96 +115,70 @@ const normalizeInvoiceListForUI = (invoices) => {
 };
 
 const syncInvoicesToDatabase = async (
-    startDate = moment()
-        .utc(false)
-        .subtract(7, "days")
-        .format("YYYY-MM-DD HH:mm:ss"),
-    endDate = moment().utc(false).add(1, "days").format("YYYY-MM-DD HH:mm:ss")
+  startDate = moment().utc(false).subtract(7, 'days').format('YYYY-MM-DD HH:mm:ss'),
+  endDate = moment().utc(false).add(1, 'days').format('YYYY-MM-DD HH:mm:ss'),
 ) => {
-    const incomingInvoices = await turkcellService.listIncomings(
-        startDate,
-        endDate
-    );
-    const outgoingInvoices = await turkcellService.listOutgoings(
-        invoiceListTypes.outgoing,
-        startDate,
-        endDate
-    );
-    const outgoingArchives = await turkcellService.listOutgoings(
-        invoiceListTypes.outgoingArchive,
-        startDate,
-        endDate
-    );
-    const idsIn = _.map(incomingInvoices.items, "id");
-    const idsOut = _.map(outgoingInvoices, "id");
-    const idsArch = _.map(outgoingArchives, "id");
-    console.log(idsIn.length, "incoming invoices");
-    console.log(idsOut.length, "outgoing invoices");
-    console.log(idsArch.length, "outgoing archives");
-    const incomingInvoicesJson = await async.mapSeries(idsIn, async (id) => {
-        const json = await getInvoiceJsonFromUuid(
-            id,
-            invoiceDirectionTypes.incoming
-        );
-        return json;
-    });
+  const existingInvoicesUuids = (await invoicesModel
+    .listInvoices(new Date(startDate), new Date(endDate))).map((inv) => inv.uuid);
 
-    const outgoingInvoicesJson = await async.mapSeries(idsOut, async (id) => {
-        const json = await getInvoiceJsonFromUuid(
-            id,
-            invoiceDirectionTypes.outgoing
-        );
-        return json;
-    });
+  const incomingInvoices = await turkcellService.listIncomings(startDate, endDate);
+  const outgoingInvoices = await turkcellService.listOutgoings(invoiceListTypes.outgoing, startDate, endDate);
+  const outgoingArchives = await turkcellService.listOutgoings(invoiceListTypes.outgoingArchive, startDate, endDate);
+  const idsIn = _.map(
+    _.filter(incomingInvoices.items, (item) => !existingInvoicesUuids.includes(item.id)),
+    'id',
+  );
+  const idsOut = _.map(
+    _.filter(outgoingInvoices, (item) => !existingInvoicesUuids.includes(item.id)),
+    'id',
+  );
+  const idsArch = _.map(
+    _.filter(outgoingArchives, (item) => !existingInvoicesUuids.includes(item.id)),
+    'id',
+  );
+  console.log(idsIn.length, 'incoming invoices');
+  console.log(idsOut.length, 'outgoing invoices');
+  console.log(idsArch.length, 'outgoing archives');
 
-    const outgoingArchivesJson = await async.mapSeries(idsArch, async (id) => {
-        const json = await getInvoiceJsonFromUuid(
-            id,
-            invoiceDirectionTypes.outgoingArchive
-        );
-        return json;
-    });
-    const allInvoices = [];
-    for await (const invoice of incomingInvoicesJson) {
-        console.log("normalizing incoming invoice");
-        allInvoices.push(
-            await normalizeInvoice(
-                invoice,
-                invoiceDirectionTypesForDatabase.incoming
-            )
-        );
-    }
-    for await (const invoice of outgoingInvoicesJson) {
-        console.log("normalizing outgoing invoice");
-        allInvoices.push(
-            await normalizeInvoice(
-                invoice,
-                invoiceDirectionTypesForDatabase.outgoing
-            )
-        );
-    }
-    for await (const invoice of outgoingArchivesJson) {
-        console.log("normalizing outgoing archive");
-        allInvoices.push(
-            await normalizeInvoice(
-                invoice,
-                invoiceDirectionTypesForDatabase.outgoing
-            )
-        );
-    }
+  const incomingInvoicesJson = await async.mapSeries(idsIn, async (id) => {
+    const json = await getInvoiceJsonFromUuid(id, invoiceDirectionTypes.incoming);
+    return json;
+  });
 
-    const createdInvoices = await Promise.all(
-        _.map(allInvoices, async (invoice) => {
-            const invRecord = await invoicesModel.createInvoice(invoice);
-            return invRecord;
-        })
-    );
-    const createdInvoicesClearedNull = _.filter(createdInvoices, (invoice) => {
-        return invoice !== undefined && invoice !== null;
-    });
-    return createdInvoicesClearedNull.length;
+  const outgoingInvoicesJson = await async.mapSeries(idsOut, async (id) => {
+    const json = await getInvoiceJsonFromUuid(id, invoiceDirectionTypes.outgoing);
+    return json;
+  });
+
+  const outgoingArchivesJson = await async.mapSeries(idsArch, async (id) => {
+    const json = await getInvoiceJsonFromUuid(id, invoiceDirectionTypes.outgoingArchive);
+    return json;
+  });
+  const allInvoices = [];
+  for await (const invoice of incomingInvoicesJson) {
+    console.log('normalizing incoming invoice');
+    allInvoices.push(await normalizeInvoice(invoice, invoiceDirectionTypesForDatabase.incoming));
+  }
+  for await (const invoice of outgoingInvoicesJson) {
+    console.log('normalizing outgoing invoice');
+    allInvoices.push(await normalizeInvoice(invoice, invoiceDirectionTypesForDatabase.outgoing));
+  }
+  for await (const invoice of outgoingArchivesJson) {
+    console.log('normalizing outgoing archive');
+    allInvoices.push(await normalizeInvoice(invoice, invoiceDirectionTypesForDatabase.outgoing));
+  }
+
+  const createdInvoices = await Promise.all(
+    _.map(allInvoices, async (invoice) => {
+      const invRecord = await invoicesModel.createInvoice(invoice);
+      return invRecord;
+    }),
+  );
+  const createdInvoicesClearedNull = _.filter(createdInvoices, (invoice) => {
+    return invoice !== undefined && invoice !== null;
+  });
+  return createdInvoicesClearedNull.length;
 };
-
 
 const listInvoices = async (startDate, endDate) => {
   const sDate = moment.utc(startDate).startOf('day').toDate();
