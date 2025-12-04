@@ -1,4 +1,4 @@
-const columnDefs = [
+﻿const columnDefs = [
   {
     headerName: '',
     checkboxSelection: true,
@@ -164,7 +164,7 @@ const columnDefs = [
   {
     field: 'logo_invoice_send_detail',
     headerName: 'Logo Fatura Aktarım Detayı',
-    filter: 'agNumberColumnFilter',
+    filter: 'agTextColumnFilter',
     readOnly: true,
     editable: false,
     width: 200,
@@ -327,8 +327,8 @@ const gridOptions = {
   getRowHeight: (params) => {
     const isDetailRow = params.node.detail;
     if (!isDetailRow) return undefined;
-    const detailPanelHeight = params.data.lines.length * 70;
-    return detailPanelHeight > 500 ? detailPanelHeight : 400;
+    const detailPanelHeight = params.data.lines.length * 80;
+    return detailPanelHeight > 500 ? detailPanelHeight : 500;
   },
 };
 
@@ -380,7 +380,7 @@ $(document).ready(function () {
 
   $('#sync-invoices').on('click', function () {
     let sd_data = moment.utc(start_date.selectedDates[0]);
-    let ed_data = moment.utc(end_date.selectedDates[0]);
+    let ed_data = moment.utc(end_date.selectedDates[0]).add(1, 'days');
     Swal.fire({
       html: `<b>${sd_data.format('DD.MM.YYYY')} - ${ed_data.format(
         'DD.MM.YYYY',

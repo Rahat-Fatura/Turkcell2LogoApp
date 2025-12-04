@@ -5,6 +5,7 @@ const listIncomings = async (
   startDate = moment().subtract(7, 'days').format('YYYY-MM-DD HH:mm:ss'),
   endDate = moment().add(1, 'days').format('YYYY-MM-DD HH:mm:ss'),
 ) => {
+	console.log('listing incomings');
   const response = await turkcell.get('/v1/inboxinvoice/list', {
     params: {
       startDate,
@@ -19,6 +20,7 @@ const listOutgoings = async (
   startDate = moment().subtract(7, 'days').format('YYYY-MM-DD HH:mm:ss'),
   endDate = moment().add(1, 'days').format('YYYY-MM-DD HH:mm:ss'),
 ) => {
+	console.log('listing Outgoings');
   const response = await turkcell.get(listType, {
     params: {
       startDate,

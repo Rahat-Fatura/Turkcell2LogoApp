@@ -1,6 +1,6 @@
 {
   "name": "rs-turkcell-to-logo",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "An app for turkcell invoices to logo invoices",
   "scripts": {
     "start": "pm2 start ecosystem.config.json --no-daemon",
@@ -22,7 +22,9 @@
   },
   "dependencies": {
     "@prisma/client": "^4.11.0",
+    "async": "^3.2.6",
     "axios": "^1.6.2",
+    "axios-rate-limit": "^1.4.0",
     "axios-retry": "^4.0.0",
     "bytes": "^3.1.2",
     "config": "^3.3.10",

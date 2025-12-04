@@ -13,8 +13,12 @@ logo.interceptors.request.use((request) => {
 });
 
 logo.interceptors.response.use(
-  (response) => response,
+  (response) => {
+	  console.log(response); 
+	  return response;
+  },
   (error) => {
+	console.log(JSON.stringify(error));
     if (error.code === 'ECONNREFUSED') {
       throw new Error('Logo servisine erişilemiyor.');
     }

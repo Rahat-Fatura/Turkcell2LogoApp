@@ -132,7 +132,7 @@ const getToken = async () => {
         },
       });
     } catch (error) {
-      logger.error(error);
+      console.error('Logo token error:', error)
       throw new Error('Logo servisine erişilemiyor.');
     }
     await serviceModel.setToken(
@@ -267,6 +267,7 @@ const normalizeInvoiceForLogo = async (invoiceId) => {
         SL_DETAILS: {
           items: _.filter(slDetail, (detail) => detail !== null).map((detail) => ({
             SOURCE_WH: wh,
+			DATE: moment.utc(json.issue_datetime).startOf('day').format('YYYY-MM-DD HH:mm:ss'),
             ...detail,
           })),
         },
@@ -274,6 +275,7 @@ const normalizeInvoiceForLogo = async (invoiceId) => {
     }
     logoLines.push({
       TYPE: 0,
+	  DATE: moment.utc(json.issue_datetime).startOf('day').format('YYYY-MM-DD HH:mm:ss'),
       MASTER_CODE: logoObject.CODE,
       QUANTITY: line.quantity,
       PRICE: line.price * (1 + (_.find(line.data.tax_subtotals, (tax) => tax.code === '0015')?.percent || 0) / 100),
@@ -299,9 +301,9 @@ const normalizeInvoiceForLogo = async (invoiceId) => {
     FICHENO: json.number,
     // GL_CODE: config.logo.params.gl_code_1,
     DOC_NUMBER: json.number,
-    DATE: moment.utc(json.issue_datetime).format('YYYY-MM-DD HH:mm:ss'),
-    DOC_DATE: moment.utc(json.issue_datetime).format('YYYY-MM-DD HH:mm:ss'),
-    // TIME: moment(json.issue_datetime).format('HH:mm:ss'),
+    DATE: moment.utc(json.issue_datetime).startOf('day').format('YYYY-MM-DD HH:mm:ss'),
+    DOC_DATE: moment.utc(json.issue_datetime).startOf('day').format('YYYY-MM-DD HH:mm:ss'),
+    // TIME: moment(json.issue_datetime).endOf('day').format('HH:mm:ss'),
     AUXIL_CODE: json.number.substring(0, 3),
     // ACCOUNTREF: getSourceRef(json.number),
     // GL_CODE: getSourceCode(json.number),
@@ -320,11 +322,12 @@ const normalizeInvoiceForLogo = async (invoiceId) => {
       items: [
         {
           INTERNAL_REFERENCE: 0,
+		  DATE: moment.utc(json.issue_datetime).startOf('day').format('YYYY-MM-DD HH:mm:ss'),
           TYPE: 7,
           GRPCODE: 2,
           IOCODE: 3,
           NUMBER: json.number,
-          DATE: moment.utc(json.issue_datetime).format('YYYY-MM-DD HH:mm:ss'),
+          DATE: moment.utc(json.issue_datetime).startOf('day').format('YYYY-MM-DD HH:mm:ss'),
           SOURCE_WH: logoLines[0].SL_DETAILS ? logoLines[0].SL_DETAILS.items[0].SOURCE_WH : getSourceWh(json.number),
           SOURCE_COST_GRP: logoLines[0].SL_DETAILS ? logoLines[0].SL_DETAILS.items[0].SOURCE_WH : getSourceWh(json.number),
           // TIME: moment(json.issue_datetime).format('HH:mm:ss'),
@@ -337,6 +340,7 @@ const normalizeInvoiceForLogo = async (invoiceId) => {
       items: logoLines,
     },
   };
+  console.log(JSON.stringify(logoJson));
   return logoJson;
 };
 
