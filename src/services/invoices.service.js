@@ -118,8 +118,9 @@ const syncInvoicesToDatabase = async (
   startDate = moment().utc(false).subtract(7, 'days').format('YYYY-MM-DD HH:mm:ss'),
   endDate = moment().utc(false).add(1, 'days').format('YYYY-MM-DD HH:mm:ss'),
 ) => {
-  const existingInvoicesUuids = (await invoicesModel
-    .listInvoices(new Date(startDate), new Date(endDate))).map((inv) => inv.uuid);
+  const existingInvoicesUuids = (await invoicesModel.listInvoices(new Date(startDate), new Date(endDate))).map(
+    (inv) => inv.uuid,
+  );
 
   const incomingInvoices = await turkcellService.listIncomings(startDate, endDate);
   const outgoingInvoices = await turkcellService.listOutgoings(invoiceListTypes.outgoing, startDate, endDate);
@@ -136,6 +137,11 @@ const syncInvoicesToDatabase = async (
     _.filter(outgoingArchives, (item) => !existingInvoicesUuids.includes(item.id)),
     'id',
   );
+
+  console.log('incomingInvoices.length:', incomingInvoices.items.length, 'idsIn.length:', idsIn.length);
+  console.log('outgoingInvoices.length:', outgoingInvoices.items.length, 'idsOut.length:', idsOut.length);
+  console.log('outgoingArchives.length:', outgoingArchives.items.length, 'idsArch.length:', idsArch.length);
+
   console.log(idsIn.length, 'incoming invoices');
   console.log(idsOut.length, 'outgoing invoices');
   console.log(idsArch.length, 'outgoing archives');
