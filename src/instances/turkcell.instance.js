@@ -17,7 +17,7 @@ const turkcellBase = axios.create({
 
 const turkcell = rateLimit(turkcellBase, {
   maxRequests: 1,
-  perMilliseconds: 1100,
+  perMilliseconds: 2000,
 });
 
 // axiosRetry(turkcell, {

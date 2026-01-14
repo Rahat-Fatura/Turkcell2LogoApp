@@ -114,38 +114,50 @@ const normalizeInvoiceListForUI = (invoices) => {
   };
 };
 
+const addDays = (date, days = 0) => {
+  const d = new Date(date); // kopya
+  d.setDate(d.getDate() + days);
+  return d;
+};
+
 const syncInvoicesToDatabase = async (
   startDate = moment().utc(false).subtract(7, 'days').format('YYYY-MM-DD HH:mm:ss'),
   endDate = moment().utc(false).add(1, 'days').format('YYYY-MM-DD HH:mm:ss'),
 ) => {
-  const existingInvoicesUuids = (await invoicesModel.listInvoices(new Date(startDate), new Date(endDate))).map(
-    (inv) => inv.uuid,
+  const existingInvoicesUuids = (await invoicesModel.listInvoices(addDays(startDate, -2), addDays(endDate, 2))).map((inv) =>
+    inv.uuid.toLocaleLowerCase(),
   );
+  console.log('existingInvoicesUuids.length:', existingInvoicesUuids[0]);
 
   const incomingInvoices = await turkcellService.listIncomings(startDate, endDate);
   const outgoingInvoices = await turkcellService.listOutgoings(invoiceListTypes.outgoing, startDate, endDate);
   const outgoingArchives = await turkcellService.listOutgoings(invoiceListTypes.outgoingArchive, startDate, endDate);
   const idsIn = _.map(
-    _.filter(incomingInvoices.items, (item) => !existingInvoicesUuids.includes(item.id)),
+    _.filter(incomingInvoices.items, (item) => !existingInvoicesUuids.includes(item.id.toLocaleLowerCase())),
     'id',
   );
   const idsOut = _.map(
-    _.filter(outgoingInvoices, (item) => !existingInvoicesUuids.includes(item.id)),
+    _.filter(outgoingInvoices, (item) => !existingInvoicesUuids.includes(item.id.toLocaleLowerCase())),
     'id',
   );
   const idsArch = _.map(
-    _.filter(outgoingArchives, (item) => !existingInvoicesUuids.includes(item.id)),
+    _.filter(outgoingArchives, (item) => !existingInvoicesUuids.includes(item.id.toLocaleLowerCase())),
     'id',
   );
 
+  // console.log('existingInvoicesUuids', existingInvoicesUuids);
+  // console.log('incomingInvoices', incomingInvoices);
+  console.log('outgoingInvoices', outgoingInvoices);
+  console.log('idsOut', idsOut);
+
   console.log('incomingInvoices.length:', incomingInvoices.items.length, 'idsIn.length:', idsIn.length);
-  console.log('outgoingInvoices.length:', outgoingInvoices.items.length, 'idsOut.length:', idsOut.length);
-  console.log('outgoingArchives.length:', outgoingArchives.items.length, 'idsArch.length:', idsArch.length);
+  console.log('outgoingInvoices.length:', outgoingInvoices.length, 'idsOut.length:', idsOut.length);
+  console.log('outgoingArchives.length:', outgoingArchives.length, 'idsArch.length:', idsArch.length);
 
   console.log(idsIn.length, 'incoming invoices');
   console.log(idsOut.length, 'outgoing invoices');
   console.log(idsArch.length, 'outgoing archives');
-
+  // return;
   const incomingInvoicesJson = await async.mapSeries(idsIn, async (id) => {
     const json = await getInvoiceJsonFromUuid(id, invoiceDirectionTypes.incoming);
     return json;
@@ -162,14 +174,19 @@ const syncInvoicesToDatabase = async (
   });
   const allInvoices = [];
   for await (const invoice of incomingInvoicesJson) {
+    if (!invoice) continue;
     console.log('normalizing incoming invoice');
     allInvoices.push(await normalizeInvoice(invoice, invoiceDirectionTypesForDatabase.incoming));
   }
   for await (const invoice of outgoingInvoicesJson) {
+    if (!invoice) continue;
+
     console.log('normalizing outgoing invoice');
     allInvoices.push(await normalizeInvoice(invoice, invoiceDirectionTypesForDatabase.outgoing));
   }
   for await (const invoice of outgoingArchivesJson) {
+    if (!invoice) continue;
+
     console.log('normalizing outgoing archive');
     allInvoices.push(await normalizeInvoice(invoice, invoiceDirectionTypesForDatabase.outgoing));
   }
@@ -177,6 +194,7 @@ const syncInvoicesToDatabase = async (
   const createdInvoices = await Promise.all(
     _.map(allInvoices, async (invoice) => {
       const invRecord = await invoicesModel.createInvoice(invoice);
+      if (!invRecord) console.log('invoice not created', invoice);
       return invRecord;
     }),
   );

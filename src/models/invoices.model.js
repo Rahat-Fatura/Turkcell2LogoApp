@@ -8,6 +8,8 @@ const createInvoice = async (invoice) => {
     });
     return invRecord;
   } catch (error) {
+    console.log('error createInvoice', error);
+
     if (error.code === 'P2002') return;
     // logger.error(error);
     throw new Error(error);
@@ -60,6 +62,16 @@ const listInvoices = async (startDate, endDate) => {
     },
     orderBy: {
       invoiceDate: 'desc',
+    },
+  });
+  return invoices;
+};
+
+const listInvoicesWithOutDate = async () => {
+  const invoices = await database.invoices.findMany({
+    select: {
+      uuid: true,
+      id: true,
     },
   });
   return invoices;
@@ -152,6 +164,7 @@ module.exports = {
   getInvoiceByUuid,
   getInvoiceById,
   listInvoices,
+  listInvoicesWithOutDate,
   updateInvoiceCurrent,
   updateInvoiceLineItem,
   updateInvoiceLogoStatus,
